@@ -1,58 +1,32 @@
-import os
-import shutil
 from pathlib import Path
 
-from sklearn.model_selection import train_test_split
+from PIL import Image
+from torch.utils.data import Dataset
 
-from config import RAW_DATA_DIR, PROCESSED_DATA_DIR
+class PneumoniaDataset(Dataset):
+    def __init__(self, root_folder: Path, split:str, transform=None):
+        self.root_folder = root_folder / split
+        self.transform = transform
+        self.classes = ["NORMAL", "PNEUMONIA"]
+        self.classes_id = dict(zip(self.classes, range(len(self.classes))))
 
+        self.images = []
+        self.labels = []
 
-def get_latest_pneumonia_dataset():
-    folders = [f for f in RAW_DATA_DIR.iterdir() if RAW_DATA_DIR.is_dir()]
-    if not folders:
-        raise FileNotFoundError(f"No dataset folders found in {RAW_DATA_DIR}")
+        for cls in self.classes:
+            for img_path in (self.root_folder / cls).iterdir():
+                self.images.append(img_path)
+                self.labels.append(self.classes_id[cls])
 
-    latest_folder = max(folders)
+    def __len__(self):
+        return len(self.labels)
 
-    return latest_folder / "chest_xray"
+    def __getitem__(self, index):
+        img_path = self.images[index]
+        img = Image.open(img_path).convert("L")
+        label = self.labels[index]
 
-def main():
-    latest_folder = get_latest_pneumonia_dataset()
-    shutil.rmtree(PROCESSED_DATA_DIR, ignore_errors=True)
+        if (self.transform is not None):
+            img = self.transform(img)
 
-    classes = ["NORMAL", "PNEUMONIA"]
-    src_split_dir = latest_folder / "test"
-    dst_split_dir = PROCESSED_DATA_DIR / "test"
-
-
-    for cls in classes:
-        src_cls = src_split_dir / cls
-        dst_cls = dst_split_dir / cls
-        dst_cls.mkdir(parents=True, exist_ok=True)
-
-        for img_path in src_cls.glob("*.*"):
-            if img_path.is_file():
-                shutil.copy2(img_path, dst_cls)
-
-    images = []
-    labels = []
-    for cls in classes:
-        for img_path in (latest_folder / "train" / cls).iterdir():
-            if img_path.is_file():
-                images.append(img_path)
-                labels.append(cls)
-
-    train_paths, val_paths, train_labels, val_labels = train_test_split(images, labels, stratify=labels, train_size=0.8, test_size=0.2, random_state=42)
-
-    for img_path, cls in zip(train_paths, train_labels):
-        dst = PROCESSED_DATA_DIR / "train" / cls
-        dst.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(img_path, dst)
-
-    for img_path, cls in zip(val_paths, val_labels):
-        dst = PROCESSED_DATA_DIR / "val" / cls
-        dst.mkdir(parents=True, exist_ok=True)
-        shutil.copy2(img_path, dst)
-
-if __name__ == '__main__':
-    main()
+        return img, label
