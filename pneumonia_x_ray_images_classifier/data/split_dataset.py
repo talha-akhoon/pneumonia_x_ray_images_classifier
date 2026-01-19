@@ -6,7 +6,7 @@ from pneumonia_x_ray_images_classifier.data.make_dataset import get_latest_pneum
 
 
 def main():
-    latest_folder = get_latest_pneumonia_dataset()
+    latest_folder = get_latest_pneumonia_dataset(use_raw=True)
     shutil.rmtree(PROCESSED_DATA_DIR, ignore_errors=True)
 
     classes = ["NORMAL", "PNEUMONIA"]

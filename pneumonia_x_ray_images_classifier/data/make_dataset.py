@@ -2,15 +2,22 @@ import shutil
 from datetime import datetime
 from pathlib import Path
 import kagglehub
-from pneumonia_x_ray_images_classifier.config import RAW_DATA_DIR
 
-def get_latest_pneumonia_dataset():
-    folders = [f for f in RAW_DATA_DIR.iterdir() if f.is_dir()]
+from pneumonia_x_ray_images_classifier.config import RAW_DATA_DIR, PROCESSED_DATA_DIR
+
+
+def get_latest_pneumonia_dataset(use_raw: bool = False):
+    if not use_raw:
+        return PROCESSED_DATA_DIR
+
+    data_dir = RAW_DATA_DIR
+
+    folders = [f for f in data_dir.iterdir() if f.is_dir()]
     if not folders:
-        raise FileNotFoundError(f"No dataset folders found in {RAW_DATA_DIR}")
+        raise FileNotFoundError(f"No dataset folders found in {data_dir}")
+
 
     latest_folder = max(folders, key=lambda p: p.name)
-
     return latest_folder / "chest_xray"
 
 
