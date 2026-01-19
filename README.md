@@ -1,61 +1,148 @@
-# pneumonia_x_ray_images_classifier
+# 🩺 Pneumonia X-ray Image Classifier
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+A deep learning system for **automatic pneumonia detection from chest X-ray images**, built using transfer learning with MobileNetV2 and deployed as a FastAPI service inside a Docker container.
 
-A deep learning–based binary image classifier for detecting pneumonia from chest X-ray images
+> ⚠️ **Disclaimer:** This project is for educational and demonstration purposes only.  
+> It is **not a medical device** and must not be used for clinical decision-making.
 
-## Project Organization
+---
+
+## 📌 Project Overview
+
+This project explores the end-to-end lifecycle of a machine learning system:
+
+- Dataset analysis and preprocessing
+- Model training and experimentation
+- Evaluation on a held-out test set
+- Deployment as an inference API
+- Containerisation for reproducible deployment
+
+The final model is optimised for **high recall**, making it suitable as a **screening tool** where missing pneumonia cases is more costly than false positives.
+
+---
+
+## 📊 Dataset
+
+- **Source:** Chest X-Ray Images (Pneumonia) – Kaggle  
+- **Classes:**  
+  - `NORMAL`  
+  - `PNEUMONIA`
+- Images were resized and normalised using ImageNet statistics to match the pretrained backbone.
+
+---
+
+## 🧠 Model Architecture
+
+- **Backbone:** MobileNetV2 (ImageNet pretrained)
+- **Classifier Head:**
+  - Global Average Pooling
+  - Dropout (p = 0.5)
+  - Linear layer (2 classes)
+- **Training Strategy:**
+  - Baseline: frozen backbone
+  - Regularisation: dropout added
+  - Final model: last 3 backbone blocks unfrozen (fine-tuning)
+- **Loss:** Cross-Entropy
+- **Optimizer:** Adam
+- **Learning Rate (final):** 1e-4
+
+---
+
+## 🧪 Model Performance (Test Set)
+
+Final evaluation performed **once** on a held-out test set using a standalone script.
+
+| Metric (PNEUMONIA class) | Value |
+|--------------------------|-------|
+| Recall                   | **0.997** |
+| Precision                | 0.720 |
+| F1 Score                 | 0.837 |
+| Accuracy                 | 0.756 |
+| ROC-AUC                  | 0.939 |
+
+**Interpretation:**
+- The model detects nearly all pneumonia cases (very high recall).
+- It produces false positives, which is expected given the recall-optimised objective.
+
+---
+
+## 🚀 API Usage
+
+### Health Check
+```bash
+GET /health
+````
+
+### Prediction
+
+```bash
+POST /predict
+```
+
+**Input:**
+
+* Multipart form upload with key `file` (JPEG/PNG image)
+
+**Example:**
+
+```bash
+curl -X POST "http://localhost:7860/predict" \
+  -H "accept: application/json" \
+  -F "file=@xray.jpeg"
+```
+
+**Response:**
+
+```json
+{
+  "prediction": "PNEUMONIA",
+  "p_pneumonia": 0.9998,
+  "note": "High-recall screening model; not a medical device."
+}
+```
+
+---
+
+## 🐳 Docker
+
+### Build
+
+```bash
+docker build -t pneumonia-api .
+```
+
+### Run
+
+```bash
+docker run -p 7860:7860 pneumonia-api
+```
+
+The service will be available at:
 
 ```
-├── LICENSE            <- Open-source license if one is chosen
-├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
-├── README.md          <- The top-level README for developers using this project.
-├── data
-│   ├── external       <- Data from third party sources.
-│   ├── interim        <- Intermediate data that has been transformed.
-│   ├── processed      <- The final, canonical data sets for modeling.
-│   └── raw            <- The original, immutable data dump.
-│
-├── docs               <- A default mkdocs project; see www.mkdocs.org for details
-│
-├── models             <- Trained and serialized models, model predictions, or model summaries
-│
-├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-│                         the creator's initials, and a short `-` delimited description, e.g.
-│                         `1.0-jqp-initial-data-exploration`.
-│
-├── pyproject.toml     <- Project configuration file with package metadata for 
-│                         pneumonia_x_ray_images_classifier and configuration for tools like black
-│
-├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-│
-├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures        <- Generated graphics and figures to be used in reporting
-│
-├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-│                         generated with `pip freeze > requirements.txt`
-│
-├── setup.cfg          <- Configuration file for flake8
-│
-└── pneumonia_x_ray_images_classifier   <- Source code for use in this project.
-    │
-    ├── __init__.py             <- Makes pneumonia_x_ray_images_classifier a Python module
-    │
-    ├── config.py               <- Store useful variables and configuration
-    │
-    ├── dataset.py              <- Scripts to download or generate data
-    │
-    ├── features.py             <- Code to create features for modeling
-    │
-    ├── modeling                
-    │   ├── __init__.py 
-    │   ├── predict.py          <- Code to run model inference with trained models          
-    │   └── train.py            <- Code to train models
-    │
-    └── plots.py                <- Code to create visualizations
+http://localhost:7860
 ```
 
---------
+---
+
+## 🧩 Key Learnings
+
+* Transfer learning enables strong performance with limited data
+* Validation metrics must guide model selection — not architecture choices alone
+* High recall models trade specificity for safety
+* Separating training, evaluation, and deployment improves reproducibility
+* Containerisation simplifies real-world deployment
+
+---
+
+## 👤 Author
+
+**Talha Akhoon**
+Full-Stack / AI Engineer
+
+---
+
+## 📜 License
+
+MIT License
 
